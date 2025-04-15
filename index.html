@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Clonador + Editor de Páginas</title>
+    <!-- Adicione o TinyMCE (editor gratuito) -->
+    <script src="https://cdn.tiny.cloud/1/no-api-key/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
+    <style>
+        body { font-family: Arial; max-width: 1000px; margin: 0 auto; padding: 20px; }
+        #editor-container { display: none; margin-top: 20px; border: 1px solid #ddd; padding: 10px; }
+        button { background: #0066ff; color: white; border: none; padding: 8px 15px; margin: 5px; cursor: pointer; }
+        #live-preview { border: 1px solid #ccc; padding: 10px; margin-top: 10px; }
+    </style>
+</head>
+<body>
+
+    <h1>✏️ Clonador + Editor de Páginas</h1>
+    <input type="url" id="pageUrl" placeholder="Cole o URL da página" style="width: 70%;">
+    <button onclick="clonePage()">Clonar</button>
+
+    <!-- Área do Editor -->
+    <div id="editor-container">
+        <button onclick="enableEditing()">Editar Textos</button>
+        <button onclick="saveChanges()">Salvar Alterações</button>
+        <div id="live-editor" style="height: 500px;"></div>
+    </div>
+
+    <!-- Visualização -->
+    <div id="live-preview"></div>
+
+    <script>
+        let clonedHtml = '';
+
+        async function clonePage() {
+            const url = document.getElementById('pageUrl').value;
+            if (!url) return alert("Cole um link!");
+
+            const response = await fetch('/.netlify/functions/clone', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ url })
+            });
+            
+            const data = await response.json();
+            if (data.success) {
+                clonedHtml = data.html;
+                document.getElementById('editor-container').style.display = 'block';
+                document.getElementById('live-preview').innerHTML = data.html;
+            } else {
+                alert("Erro: " + data.error);
+            }
+        }
+
+        function enableEditing() {
+            tinymce.init({
+                selector: '#live-editor',
+                menubar: false,
+                plugins: 'lists link',
+                toolbar: 'bold italic | alignleft aligncenter alignright | bullist numlist | link',
+                setup: function(editor) {
+                    editor.setContent(clonedHtml);
+                }
+            });
+        }
+
+        function saveChanges() {
+            const editedHtml = tinymce.get('live-editor').getContent();
+            document.getElementById('live-preview').innerHTML = editedHtml;
+            clonedHtml = editedHtml;
+            alert("Alterações salvas!");
+        }
+    </script>
+</body>
+</html>
